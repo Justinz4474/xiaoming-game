@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>小明上学记</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+        }
+        .choice {
+            display: inline-block;
+            background: #e6f2ff;
+            padding: 10px 15px;
+            margin: 8px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #0066cc;
+            border: 1px solid #b3d1ff;
+        }
+        .choice:hover {
+            background: #cce0ff;
+        }
+        .stats {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .highlight {
+            background-color: #fffacd;
+            padding: 2px 4px;
+        }
+        .good { color: green; }
+        .bad { color: red; }
+        #game-content {
+            min-height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>小明上学记</h1>
+    <div id="game-content">
+        <!-- Game content will load here -->
+    </div>
+
+    <script>
+        // Game state
+        const state = {
+            money: 50,
+            time: 30,
+            stress: 0,
+            day: 0,
+            hasUmbrella: false,
+            weekdays: ["星期一", "星期二", "星期三", "星期四", "星期五"]
+        };
+
+        // Display current passage
+        function showPassage(passageId) {
+            let content = "";
+            
+            if (passageId === "home") {
+                content = `
+                    <div class="stats">
+                        <strong>${state.weekdays[state.day]}</strong><br>
+                        剩余时间: <span class="highlight">${state.time}</span>分钟 | 
+                        现金: ¥<span class="highlight">${state.money}</span> | 
+                        压力: <span class="highlight">${state.stress}</span>/5
+                    </div>
+                    
+                    ${state.hasUmbrella ? '☔ 有伞<br>' : ''}
+                    
+                    ${state.day === 0 ? '<strong>今天是小明第一天上学的日子！</strong><br>' : ''}
+                    
+                    <a class="choice" onclick="showPassage('prepare')">准备出发</a>
+                    ${state.money > 10 ? `<a class="choice" onclick="state.money -= 8; state.time -= 5; showPassage('prepare')">买早餐 (¥8)</a>` : ''}
+                `;
+            }
+            else if (passageId === "prepare") {
+                content = `
+                    ${state.time > 60 ? `现在才${7 + Math.floor((60 - state.time)/60)}点，太早了...<br>` : ''}
+                    
+                    ${Math.random() < 0.3 ? `
+                        <span class="bad">外面正在下雨！</span><br>
+                        ${!state.hasUmbrella ? `
+                            <a class="choice" onclick="state.time -= 5; showPassage('findUmbrella')">找伞</a>
+                        ` : ''}
+                    ` : ''}
+                    
+                    <h3>选择交通工具：</h3>
+                    <a class="choice" onclick="state.time -= 15; showPassage('walk')">走路 (健康+1)</a>
+                    <a class="choice" onclick="state.money -= 2; state.time -= 10; showPassage('bus')">坐巴士 (¥2)</a>
+                    <a class="choice" onclick="state.money -= 25; state.time -= 5; showPassage('taxi')">打车 (¥25)</a>
+                `;
+            }
+            else if (passageId === "walk") {
+                let eventText = "";
+                if (Math.random() < 0.4) {
+                    state.time -= 5;
+                    eventText = `<span class="bad">遇到红灯！耽误了5分钟。</span><br>`;
+                }
+                
+                content = `
+                    小明走路去学校...<br>
+                    ${eventText}
+                    ${showSchoolResult()}
+                `;
+            }
+            else if (passageId === "bus") {
+                let eventText = "";
+                if (Math.random() < 0.3) {
+                    state.time -= 5;
+                    eventText = `<span class="bad">没零钱！耽误了5分钟。</span><br>`;
+                } else if (Math.random() < 0.2) {
+                    state.time -= 15;
+                    eventText = `<span class="bad">坐错方向！耽误了15分钟。</span><br>`;
+                }
+                
+                content = `
+                    小明坐巴士去学校...<br>
+                    ${eventText}
+                    ${showSchoolResult()}
+                `;
+            }
+            else if (passageId === "taxi") {
+                let eventText = "";
+                if (Math.random() < 0.1) {
+                    state.time += 10;
+                    eventText = `<span class="bad">司机拒载！浪费了10分钟。</span><br>`;
+                } else if (Math.random() < 0.15) {
+                    state.money -= 10;
+                    eventText = `<span class="bad">司机绕路！多花了¥10。</span><br>`;
+                }
+                
+                content = `
+                    小明打车去学校...<br>
+                    ${eventText}
+                    ${showSchoolResult()}
+                `;
+            }
+            else if (passageId === "findUmbrella") {
+                if (Math.random() < 0.7) {
+                    state.hasUmbrella = true;
+                    content = `
+                        <span class="good">在门口找到了伞！</span><br>
+                        <a class="choice" onclick="showPassage('prepare')">继续准备</a>
+                    `;
+                } else {
+                    content = `
+                        <span class="bad">没找到伞...</span><br>
+                        <a class="choice" onclick="showPassage('prepare')">继续准备</a>
+                    `;
+                }
+            }
+            
+            document.getElementById("game-content").innerHTML = content || "Passage not found!";
+        }
+
+        // Show school arrival result
+        function showSchoolResult() {
+            let result = "";
+            
+            if (state.time < 0) {
+                const lateMinutes = -state.time;
+                state.stress += 1;
+                result = `<span class="bad">迟到${lateMinutes}分钟！</span>`;
+                
+                if (Math.random() < 0.6) {
+                    state.stress += 1;
+                    result += "<br>被老师批评了...";
+                }
+            } else {
+                result = `<span class="good">准时到达！</span>`;
+                if (state.time > 5) {
+                    result += `<br>还提前${state.time}分钟！`;
+                }
+            }
+            
+            if (state.money < 0) {
+                result += `<br><span class="bad">欠债¥${-state.money}！</span>`;
+            }
+            
+            result += "<div style='margin-top:20px'>";
+            
+            if (state.stress >= 5 || state.money < -20 || state.day >= 4) {
+                result += showGameOver();
+            } else {
+                state.day += 1;
+                state.time = 30;
+                if (Math.random() < 0.2) state.hasUmbrella = false;
+                
+                result += `<a class="choice" onclick="showPassage('home')">明天继续</a>`;
+            }
+            
+            return result;
+        }
+
+        // Show game over screen
+        function showGameOver() {
+            let ending = "";
+            
+            if (state.stress >= 5) {
+                ending = `<span class="bad">压力过大！<br>小明需要好好休息...</span>`;
+            } else if (state.money < -20) {
+                ending = `<span class="bad">财务危机！<br>欠债¥${-state.money}元！</span>`;
+            } else if (state.day >= 4) {
+                ending = `<span class="good">顺利完成一周！<br>表现不错！</span>`;
+            } else {
+                ending = `<span style="color:purple">特殊结局！<br>小明决定转学...</span>`;
+            }
+            
+            return `
+                <h2>一周总结</h2>
+                ${ending}
+                <div style='margin-top:20px'>
+                    <a class="choice" onclick="resetGame()">重新开始</a>
+                </div>
+            `;
+        }
+
+        // Reset game state
+        function resetGame() {
+            state.money = 50;
+            state.time = 30;
+            state.stress = 0;
+            state.day = 0;
+            state.hasUmbrella = false;
+            showPassage("home");
+        }
+
+        // Start the game
+        showPassage("home");
+    </script>
+</body>
+</html>
